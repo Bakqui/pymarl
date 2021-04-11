@@ -1,6 +1,7 @@
 import torch as th
 from torch.distributions import Categorical
 from .epsilon_schedules import DecayThenFlatSchedule
+from .noise import OUNoise
 
 REGISTRY = {}
 
@@ -63,3 +64,47 @@ class EpsilonGreedyActionSelector():
 
 
 REGISTRY["epsilon_greedy"] = EpsilonGreedyActionSelector
+
+
+class OUNoiseSelector():
+
+    def __init__(self, args):
+        self.args = args
+
+        self.noise = OUNoise(args.action_dim, args.mu, args.theta,
+                             args.sigma, args.scale)
+
+        self.action_low = args.action_low
+        self.action_high = args.action_high
+
+    def select_action(self, agent_inputs, test_mode=False):
+        action = agent_inputs.clone()
+        if not test_mode:
+            noise = th.Tensor(self.noise.eval())
+            action += noise
+        action = action.clamp(self.action_low, self.action_high)
+        return action
+
+
+REGISTRY["OU_noise"] = OUNoiseSelector
+
+
+class NormalNoiseSelector():
+
+    def __init__(self, args):
+        self.args = args
+
+        self.action_low = args.action_low
+        self.action_high = args.action_high
+
+    def select_action(self, agent_inputs, test_mode=False):
+        action = agent_inputs.clone()
+        if not test_mode:
+            noise = th.randn_like(action)
+            action += noise
+        action = action.clamp(self.action_low, self.action_high)
+        return action
+
+
+REGISTRY["Normal_noise"] = NormalNoiseSelector
+        

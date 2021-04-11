@@ -15,6 +15,21 @@ class RNNAgent(nn.Module):
         # make hidden states on same device as model
         return self.fc1.weight.new(1, self.args.rnn_hidden_dim).zero_()
 
+    def _build_inputs(self, batch, t, idx):
+        # Assumes heterogenous agents.
+        bs = batch.batch_size
+        inputs = []
+        inputs.append(batch["obs"][:, t, idx])  # b1av
+        if self.args.obs_last_action:
+            if t == 0:
+                inputs.append(th.zeros_like(batch["actions_onehot"][:, t, idx]))
+            else:
+                inputs.append(batch["actions_onehot"][:, t-1, idx])
+
+        inputs = th.cat([x.reshape(bs, -1) for x in inputs], dim=1)
+        return inputs
+
+
     def forward(self, inputs, hidden_state):
         x = F.relu(self.fc1(inputs))
         h_in = hidden_state.reshape(-1, self.args.rnn_hidden_dim)

@@ -93,6 +93,15 @@ def run_sequential(args, logger):
         "reward": {"vshape": (1,)},
         "terminated": {"vshape": (1,), "dtype": th.uint8},
     }
+    # No parameter sharing agents
+    # scheme = {
+    #     "state": {"vshape": env_info["state_shape"]},
+    #     "obs": {"vshape": env_info["obs_shape"]},
+    #     "actions": {"vshape": (1,), "dtype": th.long},
+    #     "avail_actions": {"vshape": (env_info["n_actions"],), "dtype": th.int},
+    #     "reward": {"vshape": (1,)},
+    #     "terminated": {"vshape": (1,), "dtype": th.uint8},
+    # }
     groups = {
         "agents": args.n_agents
     }
