@@ -27,19 +27,17 @@ class BasicMAC:
     def forward(self, ep_batch, t, test_mode=False):
         if self.share_param:
             agent_inputs = self._build_inputs(ep_batch, t)
-            avail_actions = ep_batch["avail_actions"][:, t]
             agent_outs, self.hidden_states = self.agent(agent_inputs, self.hidden_states)
         else:
             bs = ep_batch.batch_size
             agent_outs = []
             for idx in range(self.n_agents):
                 agent_inputs = self.agent[idx]._build_inputs(ep_batch, t, idx)
-                avail_actions = ep_batch["avail_actions"][:, t, idx]
                 out, hidden = self.agent(agent_inputs, self.hidden_states[idx])
                 agent_outs.append(out)
                 self.hidden_states[idx] = hidden
             agent_outs = th.stack(agent_outs, dim=1).view(bs*self.n_agents, -1)
-
+        avail_actions = ep_batch["avail_actions"][:, t]
         # Softmax the agent outputs if they're policy logits
         if self.agent_output_type == "pi_logits":
 
@@ -88,10 +86,10 @@ class BasicMAC:
         self.agent.load_state_dict(th.load("{}/agent.th".format(path), map_location=lambda storage, loc: storage))
 
     def _build_agents(self, input_shape):
-        if self.args.obs_agent_id:
+        if self.share_param:
             self.agent = agent_REGISTRY[self.args.agent](input_shape, self.args)
         else:
-            self.agent = th.nn.ModuleList([agent_REGISTRY[self.args.agent]
+            self.agent = th.nn.ModuleList([agent_REGISTRY[self.args.agent](input_shape, self.args)
                                            for _ in range(self.n_agents)])
 
     def _build_inputs(self, batch, t):

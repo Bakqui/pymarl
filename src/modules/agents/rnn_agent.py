@@ -16,7 +16,7 @@ class RNNAgent(nn.Module):
         return self.fc1.weight.new(1, self.args.rnn_hidden_dim).zero_()
 
     def _build_inputs(self, batch, t, idx):
-        # Assumes heterogenous agents.
+        # Delegate building inputs to each agent
         bs = batch.batch_size
         inputs = []
         inputs.append(batch["obs"][:, t, idx])  # b1av
@@ -28,7 +28,6 @@ class RNNAgent(nn.Module):
 
         inputs = th.cat([x.reshape(bs, -1) for x in inputs], dim=1)
         return inputs
-
 
     def forward(self, inputs, hidden_state):
         x = F.relu(self.fc1(inputs))

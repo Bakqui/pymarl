@@ -17,6 +17,20 @@ class MLPAgent(nn.Module):
         self.fc3.weight.data.uniform_(-3e-3, 3e-3)
         self.out_fn = out_fn
 
+    def _build_inputs(self, batch, t, idx):
+        # Delegate building inputs to each agent
+        bs = batch.batch_size
+        inputs = []
+        inputs.append(batch["obs"][:, t, idx])
+        if self.args.obs_last_action:
+            if t == 0:
+                inputs.append(th.zeros_like(batch["actions"][:, t, idx]))
+            else:
+                inputs.append(batch["actions"][:, t-1, idx])
+
+        inputs = th.cat([x.reshape(bs, -1) for x in inputs], dim=1)
+        return inputs
+
     def forward(self, inputs):
         x = F.relu(self.fc1(inputs))
         x = F.relu(self.fc2(x))
