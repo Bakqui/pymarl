@@ -8,6 +8,7 @@ class BasicMAC:
     def __init__(self, scheme, groups, args):
         self.n_agents = args.n_agents
         self.args = args
+        self.share_param = self.args.obs_agent_id
         input_shape = self._get_input_shape(scheme)
         self._build_agents(input_shape)
         self.agent_output_type = args.agent_output_type
@@ -15,7 +16,6 @@ class BasicMAC:
         self.action_selector = action_REGISTRY[args.action_selector](args)
 
         self.hidden_states = None
-        self.share_param = self.args.obs_agent_id
 
     def select_actions(self, ep_batch, t_ep, t_env, bs=slice(None), test_mode=False):
         # Only select actions for the selected batch elements in bs
@@ -33,7 +33,7 @@ class BasicMAC:
             agent_outs = []
             for idx in range(self.n_agents):
                 agent_inputs = self.agent[idx]._build_inputs(ep_batch, t, idx)
-                out, hidden = self.agent(agent_inputs, self.hidden_states[idx])
+                out, hidden = self.agent[idx](agent_inputs, self.hidden_states[idx])
                 agent_outs.append(out)
                 self.hidden_states[idx] = hidden
             agent_outs = th.stack(agent_outs, dim=1).view(bs*self.n_agents, -1)
